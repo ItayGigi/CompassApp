@@ -64,7 +64,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @SuppressLint("MissingPermission")
     private void initLocationCheck(){
         if (!isLocationPermissionGranted()) return;
-        
+
         _fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         _locationRequest = LocationRequest.create();
@@ -127,13 +127,13 @@ public class MainActivity extends Activity implements SensorEventListener {
         return output;
     }
 
-    private float calcAngleFromNorthToTarget(double fromLat, double fromLong, double toLat, double toLong){
-        Vector3 from = Vector3.FromSpherical(fromLat, fromLong);
-        Vector3 to = Vector3.FromSpherical(toLat, toLong);
-        Vector3 up = new Vector3(0, 0, 1);
+    private float calcAngleFromNorthToTarget(double userLat, double userLong, double targetLat, double targetLong){
+        Vector3 pos = Vector3.FromSpherical(userLat, userLong);
+        Vector3 target = Vector3.FromSpherical(targetLat, targetLong);
 
-        double dot = Vector3.Dot(Vector3.Cross(to, from).Normalized(), Vector3.Cross(from, up).Normalized());
-        float angle = 180f - (float)Math.toDegrees(Math.acos(dot));
+        Vector3 toNorth = Vector3.Cross(pos, new Vector3(0, 0, 1)).Normalized();
+        Vector3 toTarget = Vector3.Cross(target, pos).Normalized();
+        float angle = 180f - (float)Math.toDegrees(Math.acos(Vector3.Dot(toTarget, toNorth)));
 
         return angle;
     }
