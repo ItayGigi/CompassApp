@@ -2,6 +2,7 @@ package com.example.compassapp;
 
 import androidx.core.app.ActivityCompat;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -22,112 +23,95 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
-import java.text.MessageFormat;
-
 public class MainActivity extends Activity implements SensorEventListener {
 
-    private ImageView compassImage;
-    private ImageView northCompassImage;
+    private ImageView _compassImage;
+    private ImageView _northCompassImage;
+    private TextView _topText;
 
-    private SensorManager sensorManager;
-    private Sensor magnetometer;
-    private Sensor accelerometer;
-    private Sensor orientation;
-    private float[] lastAccelerometer = new float[3];
-    private float[] lastMagnetometer = new float[3];
-    private float[] lastOrientation = new float[3];
-    private boolean lastAccelerometerSet = false;
-    private boolean lastMagnetometerSet = false;
-    private float[] rotationMatrix = new float[9];
-    private float[] orientationVec = new float[3];
+    private SensorManager _sensorManager;
+    private Sensor _orientation;
 
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationRequest locationRequest;
-//    private LocationCallback locationCallback;
-    private float angleFromNorth = 0f;
+    private FusedLocationProviderClient _fusedLocationClient;
+    private LocationRequest _locationRequest;
+    private LocationCallback _locationCallback;
+
+    private float _angleFromNorth = 0f;
 
     private static final float ALPHA = 0.15f; //lower alpha should equal smoother movement
-
-    TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
 
-        textView = findViewById(R.id.textView);
-        compassImage = findViewById(R.id.compass);
-        northCompassImage = findViewById(R.id.compass1);
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        orientation = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        _topText = findViewById(R.id.textView);
+        _compassImage = findViewById(R.id.compass);
+        _northCompassImage = findViewById(R.id.compass1);
+        _sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        _orientation = _sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
 
-        while (!isLocationPermissionGranted()) ;
+        if (!isLocationPermissionGranted()) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[] { android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION},
+                    1);
+        }
 
         initLocationCheck();
     }
 
+    @SuppressLint("MissingPermission")
     private void initLocationCheck(){
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        if (!isLocationPermissionGranted()) return;
+        
+        _fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        locationRequest = locationRequest.create();
-        locationRequest.setInterval(100);
-        locationRequest.setFastestInterval(50);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        _locationRequest = LocationRequest.create();
+        _locationRequest.setInterval(100);
+        _locationRequest.setFastestInterval(50);
+        _locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         //instantiating the LocationCallBack
-        LocationCallback locationCallback = new LocationCallback() {
+        _locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null) {
                     return;
                 }
-                //Showing the latitude, longitude and accuracy on the home screen.
                 for (Location location : locationResult.getLocations()) {
-                    textView.setText(MessageFormat.format("Lat: {0} Long: {1} Accuracy: {2}", location.getLatitude(), location.getLongitude(), location.getAccuracy()));
-                    angleFromNorth = calcAngleFromNorthToTarget(location.getLatitude(), location.getLongitude(), 32.0553642, 34.8637358);
+                    _angleFromNorth = calcAngleFromNorthToTarget(location.getLatitude(), location.getLongitude(), 32.0553642, 34.8637358);
+                    _topText.setText(String.format("Angle: %s", _angleFromNorth));
                 }
             }
         };
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+        _fusedLocationClient.requestLocationUpdates(_locationRequest, _locationCallback, Looper.getMainLooper());
     }
 
     private boolean isLocationPermissionGranted() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[] { android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION},
-                    1);
-            return false;
-        }
-        return true;
+        return ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, orientation, SensorManager.SENSOR_DELAY_GAME);
+        _sensorManager.registerListener(this, _orientation, SensorManager.SENSOR_DELAY_GAME);
 
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        sensorManager.unregisterListener(this, orientation);
+        _sensorManager.unregisterListener(this, _orientation);
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor == orientation) {
+        if (event.sensor == _orientation) {
             float northAngle = event.values[0];
-            northCompassImage.setRotation(-northAngle);
-            compassImage.setRotation(-northAngle-angleFromNorth);
+            _northCompassImage.setRotation(-northAngle);
+            _compassImage.setRotation(-northAngle-_angleFromNorth);
         }
     }
 
