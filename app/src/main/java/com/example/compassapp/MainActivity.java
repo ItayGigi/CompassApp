@@ -28,6 +28,8 @@ public class MainActivity extends Activity implements SensorEventListener {
     private ImageView _compassImage;
     private ImageView _northCompassImage;
     private TextView _topText;
+    private TextView _distText;
+
 
     private SensorManager _sensorManager;
     private Sensor _orientation;
@@ -39,6 +41,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     private float _angleFromNorth = 0f;
 
     private static final float ALPHA = 0.15f; //lower alpha should equal smoother movement
+    private static final float EARTH_RADIUS = 6371;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +49,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         setContentView(R.layout.main_activity);
 
         _topText = findViewById(R.id.textView);
+        _distText = findViewById(R.id.distText);
         _compassImage = findViewById(R.id.compass);
         _northCompassImage = findViewById(R.id.compass1);
         _sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -80,8 +84,10 @@ public class MainActivity extends Activity implements SensorEventListener {
                     return;
                 }
                 for (Location location : locationResult.getLocations()) {
-                    _angleFromNorth = calcAngleFromNorthToTarget(location.getLatitude(), location.getLongitude(), 32.0553642, 34.8637358);
+                    float targetLat = 32.0553642f, targetLong = 34.8637358f;
+                    _angleFromNorth = calcAngleFromNorthToTarget(location.getLatitude(), location.getLongitude(), targetLat, targetLong);
                     _topText.setText(String.format("Angle: %s", _angleFromNorth));
+                    _distText.setText(String.format("%.2f km away", distanceBetween(location.getLatitude(), location.getLongitude(), targetLat, targetLong)));
                 }
             }
         };
@@ -133,8 +139,11 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         Vector3 toNorth = Vector3.Cross(pos, new Vector3(0, 0, 1)).Normalized();
         Vector3 toTarget = Vector3.Cross(target, pos).Normalized();
-        float angle = 180f - (float)Math.toDegrees(Math.acos(Vector3.Dot(toTarget, toNorth)));
 
-        return angle;
+        return 180f - (float)Math.toDegrees(Vector3.RadiansBetween(toTarget, toNorth));
+    }
+
+    private float distanceBetween(double lat1, double long1, double lat2, double long2){
+        return EARTH_RADIUS * (float)Vector3.RadiansBetween(Vector3.FromSpherical(lat1, long1), Vector3.FromSpherical(lat2, long2));
     }
 }

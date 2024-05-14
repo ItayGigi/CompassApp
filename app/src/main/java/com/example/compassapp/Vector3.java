@@ -31,4 +31,8 @@ public class Vector3 {
                            Math.sin(longRad) * Math.cos(latRad),
                               Math.sin(latRad));
     }
+
+    public static double RadiansBetween(Vector3 a, Vector3 b) {
+        return Math.acos(Dot(a, b));
+    }
 }
