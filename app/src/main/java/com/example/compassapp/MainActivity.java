@@ -4,17 +4,23 @@ import androidx.core.app.ActivityCompat;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.SearchView;
 import android.widget.TextView;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -23,12 +29,17 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+
 public class MainActivity extends Activity implements SensorEventListener {
 
     private ImageView _compassImage;
     private ImageView _northCompassImage;
     private TextView _topText;
     private TextView _distText;
+    private TextView _locationText;
 
 
     private SensorManager _sensorManager;
@@ -37,6 +48,11 @@ public class MainActivity extends Activity implements SensorEventListener {
     private FusedLocationProviderClient _fusedLocationClient;
     private LocationRequest _locationRequest;
     private LocationCallback _locationCallback;
+
+    private Location _myLoc;
+    private Location _targetLoc;
+
+    private Geocoder geocoder;
 
     private float _angleFromNorth = 0f;
 
@@ -50,8 +66,11 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         _topText = findViewById(R.id.textView);
         _distText = findViewById(R.id.distText);
+        _locationText = findViewById(R.id.locNameText);
+
         _compassImage = findViewById(R.id.compass);
         _northCompassImage = findViewById(R.id.compass1);
+
         _sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         _orientation = _sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
 
@@ -63,6 +82,91 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
 
         initLocationCheck();
+
+        _locationText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showSearchDialog();
+            }
+        });
+
+        geocoder = new Geocoder(this, Locale.getDefault());
+    }
+
+    private void showSearchDialog(){
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.search_dialog_layout);
+
+        ImageView btnClose = dialog.findViewById(R.id.btn_close);
+
+        btnClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+            }
+        });
+
+        SearchView searchView = dialog.findViewById(R.id.search_bar);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            // Override onQueryTextSubmit method which is call when submit query is searched
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                LinearLayout resultsLayout = dialog.findViewById(R.id.results_layout);
+                resultsLayout.removeAllViews();
+
+                try {
+                    List<Address> addresses = geocoder.getFromLocationName(query, 10);
+                    Log.i("TAG", ""+addresses.size());
+                    for (Address address : addresses){
+                        TextView textView = new TextView(dialog.getContext());
+                        textView.setText(address.getAddressLine(0));
+                        textView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                setLocationByAddress(address);
+                            }
+                        });
+                        resultsLayout.addView(textView);
+                    }
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+
+        dialog.show();
+    }
+
+    private void setLocationByAddress(Address address){
+        try {
+            Integer.parseInt(address.getFeatureName());
+            _locationText.setText(address.getAddressLine(0));
+        }
+        catch (Exception e){
+            _locationText.setText(address.getFeatureName());
+        }
+
+        _targetLoc = new Location("");
+        _targetLoc.setLatitude(address.getLatitude());
+        _targetLoc.setLongitude(address.getLongitude());
+
+        Log.d("MY LOCATION", String.format("lat: %f, long: %f", _myLoc.getLatitude(), _myLoc.getLongitude()));
+        Log.d("TARGET LOCATION", String.format("lat: %f, long: %f", address.getLatitude(), address.getLongitude()));
+        updateLocation();
+    }
+
+    private void updateLocation(){
+        if (_myLoc == null || _targetLoc == null) return;
+        _angleFromNorth = calcAngleFromNorthToTarget(_myLoc.getLatitude(), _myLoc.getLongitude(), _targetLoc.getLatitude(), _targetLoc.getLongitude());
+        _topText.setText(String.format("Angle: %s", _angleFromNorth));
+        _distText.setText(String.format("%.2f km away", distanceBetween(_myLoc.getLatitude(), _myLoc.getLongitude(), _targetLoc.getLatitude(), _targetLoc.getLongitude())));
     }
 
     @SuppressLint("MissingPermission")
@@ -84,10 +188,8 @@ public class MainActivity extends Activity implements SensorEventListener {
                     return;
                 }
                 for (Location location : locationResult.getLocations()) {
-                    float targetLat = 32.0553642f, targetLong = 34.8637358f;
-                    _angleFromNorth = calcAngleFromNorthToTarget(location.getLatitude(), location.getLongitude(), targetLat, targetLong);
-                    _topText.setText(String.format("Angle: %s", _angleFromNorth));
-                    _distText.setText(String.format("%.2f km away", distanceBetween(location.getLatitude(), location.getLongitude(), targetLat, targetLong)));
+                    _myLoc = location;
+                    updateLocation();
                 }
             }
         };
@@ -140,7 +242,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         Vector3 toNorth = Vector3.Cross(pos, new Vector3(0, 0, 1)).Normalized();
         Vector3 toTarget = Vector3.Cross(target, pos).Normalized();
 
-        return 180f - (float)Math.toDegrees(Vector3.RadiansBetween(toTarget, toNorth));
+        return 180f - (float)Math.toDegrees(Vector3.SignedRadiansBetween(toTarget, toNorth, pos));
     }
 
     private float distanceBetween(double lat1, double long1, double lat2, double long2){

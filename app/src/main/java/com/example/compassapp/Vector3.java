@@ -33,6 +33,11 @@ public class Vector3 {
     }
 
     public static double RadiansBetween(Vector3 a, Vector3 b) {
-        return Math.acos(Dot(a, b));
+        return Math.acos(Dot(a.Normalized(), b.Normalized()));
+    }
+
+    public static double SignedRadiansBetween(Vector3 a, Vector3 b, Vector3 up) {
+        //atan2((Va x Vb) . Vn, Va . Vb)
+        return Math.atan2(Dot(Cross(a, b), up.Normalized()), Dot(a, b));
     }
 }
