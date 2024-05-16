@@ -35,22 +35,25 @@
     <TextView
         android:id="@+id/locNameText"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_height="53dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="48dp"
         android:clickable="true"
         android:contextClickable="false"
         android:text="[Location Name]"
         android:textAlignment="center"
-        android:textSize="34sp"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/compass1" />
+        app:layout_constraintTop_toBottomOf="@+id/compass1"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/distText"
         android:layout_width="wrap_content"
         android:layout_height="19dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:text="12.34 km away"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

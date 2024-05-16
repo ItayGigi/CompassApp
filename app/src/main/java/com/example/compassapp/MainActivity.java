@@ -123,7 +123,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                         textView.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
-                                setLocationByAddress(address);
+                                setLocationByAddress(address, query);
                             }
                         });
                         resultsLayout.addView(textView);
@@ -144,10 +144,10 @@ public class MainActivity extends Activity implements SensorEventListener {
         dialog.show();
     }
 
-    private void setLocationByAddress(Address address){
+    private void setLocationByAddress(Address address, String query){
         try {
             Integer.parseInt(address.getFeatureName());
-            _locationText.setText(address.getAddressLine(0));
+            _locationText.setText(query);
         }
         catch (Exception e){
             _locationText.setText(address.getFeatureName());
@@ -217,9 +217,9 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor == _orientation) {
-            float northAngle = event.values[0];
-            _northCompassImage.setRotation(-northAngle);
-            _compassImage.setRotation(-northAngle-_angleFromNorth);
+            float azimuth = event.values[0];
+            _northCompassImage.setRotation(-azimuth);
+            _compassImage.setRotation(-azimuth-_angleFromNorth);
         }
     }
 
