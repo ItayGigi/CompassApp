@@ -8,45 +8,46 @@
     tools:context=".MainActivity">
 
     <ImageView
-        android:id="@+id/compass1"
-        android:layout_width="411dp"
+        android:id="@+id/notches"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:alpha="0.3"
         android:rotation="0"
-        android:scaleX="0.3"
-        android:src="@drawable/compasssmall"
+        android:alpha="0.6"
+        android:src="@drawable/notches"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintDimensionRatio="h,1:1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.4
+" />
 
     <ImageView
         android:id="@+id/compass"
-        android:layout_width="411dp"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:src="@drawable/compass"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintDimensionRatio="h,1:1"
+        app:layout_constraintBottom_toBottomOf="@+id/notches"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@+id/notches" />
 
     <TextView
         android:id="@+id/locNameText"
         android:layout_width="wrap_content"
-        android:layout_height="53dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:layout_marginBottom="48dp"
+        android:layout_marginBottom="70dp"
         android:clickable="true"
         android:contextClickable="false"
-        android:text="[Location Name]"
+        android:text="[Tap to choose a location]"
         android:textAlignment="center"
         android:textSize="40sp"
+        android:textStyle="italic"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/compass1"
+        app:layout_constraintTop_toBottomOf="@+id/notches"
         app:layout_constraintVertical_bias="0.0" />
 
     <TextView
@@ -54,7 +55,7 @@
         android:layout_width="wrap_content"
         android:layout_height="19dp"
         android:layout_marginTop="4dp"
-        android:text="12.34 km away"
+        android:text=""
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/locNameText" />
@@ -64,7 +65,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="TextView"
+        android:text=""
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

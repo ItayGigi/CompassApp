@@ -16,7 +16,6 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Looper;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -36,7 +35,7 @@ import java.util.Locale;
 public class MainActivity extends Activity implements SensorEventListener {
 
     private ImageView _compassImage;
-    private ImageView _northCompassImage;
+    private ImageView _notchesImage;
     private TextView _topText;
     private TextView _distText;
     private TextView _locationText;
@@ -52,11 +51,11 @@ public class MainActivity extends Activity implements SensorEventListener {
     private Location _myLoc;
     private Location _targetLoc;
 
-    private Geocoder geocoder;
+    private Geocoder _geocoder;
 
     private float _angleFromNorth = 0f;
 
-    private static final float ALPHA = 0.15f; //lower alpha should equal smoother movement
+    private static final float ALPHA = 0.15f; //lower alpha should result in smoother movement
     private static final float EARTH_RADIUS = 6371;
 
     @Override
@@ -69,7 +68,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         _locationText = findViewById(R.id.locNameText);
 
         _compassImage = findViewById(R.id.compass);
-        _northCompassImage = findViewById(R.id.compass1);
+        _notchesImage = findViewById(R.id.notches);
 
         _sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         _orientation = _sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
@@ -83,14 +82,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         initLocationCheck();
 
-        _locationText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showSearchDialog();
-            }
-        });
+        _locationText.setOnClickListener(view -> showSearchDialog());
 
-        geocoder = new Geocoder(this, Locale.getDefault());
+        _geocoder = new Geocoder(this, Locale.getDefault());
     }
 
     private void showSearchDialog(){
@@ -115,8 +109,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 resultsLayout.removeAllViews();
 
                 try {
-                    List<Address> addresses = geocoder.getFromLocationName(query, 10);
-                    Log.i("TAG", ""+addresses.size());
+                    List<Address> addresses = _geocoder.getFromLocationName(query, 10);
                     for (Address address : addresses){
                         TextView textView = new TextView(dialog.getContext());
                         textView.setText(address.getAddressLine(0));
@@ -157,16 +150,13 @@ public class MainActivity extends Activity implements SensorEventListener {
         _targetLoc.setLatitude(address.getLatitude());
         _targetLoc.setLongitude(address.getLongitude());
 
-        Log.d("MY LOCATION", String.format("lat: %f, long: %f", _myLoc.getLatitude(), _myLoc.getLongitude()));
-        Log.d("TARGET LOCATION", String.format("lat: %f, long: %f", address.getLatitude(), address.getLongitude()));
         updateLocation();
     }
 
     private void updateLocation(){
         if (_myLoc == null || _targetLoc == null) return;
         _angleFromNorth = calcAngleFromNorthToTarget(_myLoc.getLatitude(), _myLoc.getLongitude(), _targetLoc.getLatitude(), _targetLoc.getLongitude());
-        _topText.setText(String.format("Angle: %s", _angleFromNorth));
-        _distText.setText(String.format("%.2f km away", distanceBetween(_myLoc.getLatitude(), _myLoc.getLongitude(), _targetLoc.getLatitude(), _targetLoc.getLongitude())));
+        _distText.setText(String.format(Locale.ENGLISH, "%.2f km away", distanceBetween(_myLoc.getLatitude(), _myLoc.getLongitude(), _targetLoc.getLatitude(), _targetLoc.getLongitude())));
     }
 
     @SuppressLint("MissingPermission")
@@ -204,7 +194,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
-        _sensorManager.registerListener(this, _orientation, SensorManager.SENSOR_DELAY_GAME);
+        _sensorManager.registerListener(this, _orientation, SensorManager.SENSOR_DELAY_UI);
 
     }
 
@@ -218,7 +208,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor == _orientation) {
             float azimuth = event.values[0];
-            _northCompassImage.setRotation(-azimuth);
+            _notchesImage.setRotation(-azimuth);
             _compassImage.setRotation(-azimuth-_angleFromNorth);
         }
     }
